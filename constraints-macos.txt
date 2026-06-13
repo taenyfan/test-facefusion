@@ -1,0 +1,13 @@
+# Keep NumPy compatible with OpenCV 4.12 era
+numpy<2.3.0
+
+# Avoid GUI deps on macOS unless you need them
+opencv-python-headless>=4.10,<4.13
+
+# ONNX Runtime with CoreML EP (Apple Silicon)
+onnxruntime-silicon>=1.19.2
+onnxruntime-coreml>=1.19.2
+
+# A few common troublemakers to sane versions
+protobuf<5
+pydantic<2.999  # if any packages still expect v1 interface
