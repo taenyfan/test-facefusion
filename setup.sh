@@ -16,14 +16,21 @@ eval "$TRT"
 echo "=== 3/4 rclone ==="
 command -v rclone > /dev/null || curl -s https://rclone.org/install.sh | bash
 if rclone listremotes | grep -q '^gdrive:'; then
-  echo "gdrive already configured - skipping rclone config"
+  echo "gdrive already configured - skipping"
+elif [ -n "$RCLONE_TOKEN" ]; then
+  echo "using RCLONE_TOKEN from RunPod secret"
+  rclone config create gdrive drive scope=drive token="$RCLONE_TOKEN" --non-interactive > /dev/null \
+    && rclone lsd gdrive: > /dev/null && echo "gdrive OK" \
+    || { echo "!!! RunPod secret token didn't work - make a new one on your Mac and update the secret"; rclone config delete gdrive; exit 1; }
 else
   echo
-  echo "Answers: n -> gdrive -> drive -> Enter -> Enter -> 1 -> Enter -> advanced n"
-  echo "         -> shared client_id y -> browser n -> run the printed authorize line on your MAC"
-  echo "         -> paste the {...} blob here -> Team Drive n -> keep y -> q"
+  echo "On your MAC run:   rclone authorize \"drive\""
+  echo "Sign in in the browser, then copy the {...} token it prints (the whole line, braces included)."
   echo
-  rclone config
+  read -r -p "Paste the token here and press Enter: " TOKEN
+  rclone config create gdrive drive scope=drive token="$TOKEN" --non-interactive > /dev/null \
+    && rclone lsd gdrive: > /dev/null && echo "gdrive OK" \
+    || { echo "!!! token didn't work - run setup.sh again with a fresh token"; rclone config delete gdrive; exit 1; }
 fi
 
 echo "=== 4/4 pulling to-swap from Google Drive ==="
