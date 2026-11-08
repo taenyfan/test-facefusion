@@ -23,7 +23,11 @@ if rclone listremotes | grep -q '^gdrive:'; then
   echo "gdrive already configured - skipping"
 elif [ -n "$RCLONE_TOKEN" ]; then
   echo "using RCLONE_TOKEN from RunPod secret"
-  write_conf "$RCLONE_TOKEN" \
+  case "$RCLONE_TOKEN" in
+    \{*) TOKEN_JSON="$RCLONE_TOKEN" ;;                      # raw JSON
+    *)   TOKEN_JSON=$(printf '%s' "$RCLONE_TOKEN" | base64 -d) ;;  # base64 (RunPod strips quotes from raw JSON)
+  esac
+  write_conf "$TOKEN_JSON" \
     && rclone lsd gdrive: > /dev/null && echo "gdrive OK" \
     || { echo "!!! RunPod secret token didn't work - make a new one on your Mac and update the secret"; rclone config delete gdrive; exit 1; }
 else
