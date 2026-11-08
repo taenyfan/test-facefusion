@@ -14,12 +14,16 @@ grep -qF "$TRT" ~/.bashrc || echo "$TRT" >> ~/.bashrc
 eval "$TRT"
 
 echo "=== 3/4 rclone ==="
+write_conf() {  # write the gdrive remote straight into rclone.conf (avoids rclone's arg parsing mangling the JSON)
+  mkdir -p ~/.config/rclone
+  printf '[gdrive]\ntype = drive\nscope = drive\ntoken = %s\n' "$1" > ~/.config/rclone/rclone.conf
+}
 command -v rclone > /dev/null || curl -s https://rclone.org/install.sh | bash
 if rclone listremotes | grep -q '^gdrive:'; then
   echo "gdrive already configured - skipping"
 elif [ -n "$RCLONE_TOKEN" ]; then
   echo "using RCLONE_TOKEN from RunPod secret"
-  rclone config create gdrive drive scope=drive token="$RCLONE_TOKEN" --non-interactive > /dev/null \
+  write_conf "$RCLONE_TOKEN" \
     && rclone lsd gdrive: > /dev/null && echo "gdrive OK" \
     || { echo "!!! RunPod secret token didn't work - make a new one on your Mac and update the secret"; rclone config delete gdrive; exit 1; }
 else
@@ -28,7 +32,7 @@ else
   echo "Sign in in the browser, then copy the {...} token it prints (the whole line, braces included)."
   echo
   read -r -p "Paste the token here and press Enter: " TOKEN
-  rclone config create gdrive drive scope=drive token="$TOKEN" --non-interactive > /dev/null \
+  write_conf "$TOKEN" \
     && rclone lsd gdrive: > /dev/null && echo "gdrive OK" \
     || { echo "!!! token didn't work - run setup.sh again with a fresh token"; rclone config delete gdrive; exit 1; }
 fi
